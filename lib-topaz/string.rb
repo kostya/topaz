@@ -269,4 +269,8 @@ class String
   def b
     self
   end
+
+  def gsub!(pattern, replace = nil, &block)
+    self.replace(self.gsub(pattern, replace, &block))
+  end
 end
