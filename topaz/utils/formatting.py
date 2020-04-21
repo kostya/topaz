@@ -33,7 +33,7 @@ class StringFormatter(object):
             result_w.append(space.newstr_fromstr(self.fmt[start:i]))
             i += 1
             if i >= len(self.fmt):
-                result_w.append(self.fmt_percent(space, 0, " "))
+                result_w.append(self.fmt_percent(space, 0, 0, " "))
                 return result_w
             width = 0
             while self.fmt[i].isdigit():
@@ -44,7 +44,7 @@ class StringFormatter(object):
                 precision = 0
                 i += 1
                 if i >= len(self.fmt):
-                    result_w.append(self.fmt_percent(space, 0, " "))
+                    result_w.append(self.fmt_percent(space, 0, 0, " "))
                     return result_w
                 while self.fmt[i].isdigit():
                     precision = precision * 10 + (ord(self.fmt[i]) - ord("0"))
