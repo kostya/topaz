@@ -1,5 +1,5 @@
 rply
 # Only a test requirement
-pytest
+pytest==2.5.2
 invoke
 requests
