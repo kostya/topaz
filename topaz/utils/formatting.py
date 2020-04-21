@@ -39,12 +39,22 @@ class StringFormatter(object):
             while self.fmt[i].isdigit():
                 width = width * 10 + (ord(self.fmt[i]) - ord("0"))
                 i += 1
+            precision = 6
+            if self.fmt[i] == ".":
+                precision = 0
+                i += 1
+                if i >= len(self.fmt):
+                    result_w.append(self.fmt_percent(space, 0, " "))
+                    return result_w
+                while self.fmt[i].isdigit():
+                    precision = precision * 10 + (ord(self.fmt[i]) - ord("0"))
+                    i += 1
             format_char = self.fmt[i]
             i += 1
             for c, postfix in FORMAT_CHARS:
                 if c == format_char:
                     try:
-                        w_res = getattr(self, "fmt_" + postfix)(space, width, format_char)
+                        w_res = getattr(self, "fmt_" + postfix)(space, width, precision, format_char)
                     except IndexError:
                         raise space.error(
                             space.w_ArgumentError,
@@ -64,18 +74,18 @@ class StringFormatter(object):
     def _fmt_num(self, space, num, width):
         return space.newstr_fromstr((width - len(num)) * "0" + num)
 
-    def fmt_s(self, space, width, format_char):
+    def fmt_s(self, space, width, precision, format_char):
         return space.send(self._next_item(), "to_s")
 
-    def fmt_d(self, space, width, format_char):
+    def fmt_d(self, space, width, precision, format_char):
         num = Coerce.int(space, self._next_item())
         return self._fmt_num(space, str(num), width)
 
-    def fmt_f(self, space, width, format_char):
+    def fmt_f(self, space, width, precision, format_char):
         num = Coerce.float(space, self._next_item())
-        return self._fmt_num(space, formatd(num, "f", 6), width)
+        return self._fmt_num(space, formatd(num, "f", precision), width)
 
-    def fmt_percent(self, space, width, format_char):
+    def fmt_percent(self, space, width, precision, format_char):
         if format_char in "\0\n":
             return space.newstr_fromchars(["%", format_char])
         else:

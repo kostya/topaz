@@ -596,8 +596,14 @@ class TestStringMod(object):
         assert space.str_w(w_res) == "1 abc 1"
 
     def test_f(self, space):
-        w_res = space.execute("return ' %f ' % 1.23")
-        assert space.str_w(w_res) == " 1.230000 "
+        w_res = space.execute("return ' %f ' % 1.23456")
+        assert space.str_w(w_res) == " 1.234560 "
+        w_res = space.execute("return ' %5f ' % 1.23456")
+        assert space.str_w(w_res) == " 1.234560 "
+        w_res = space.execute("return ' %.2f ' % 1.23456")
+        assert space.str_w(w_res) == " 1.23 "
+        w_res = space.execute("return ' %.9f ' % 1.23456")
+        assert space.str_w(w_res) == " 1.234560000 "
 
     def test_f_width(self, space):
         w_res = space.execute("return '%04f' % 1.23")
