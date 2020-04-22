@@ -199,7 +199,7 @@ class String
 
       while pos < size
         nxt = find_string(sep, pos)
-        break unless nxt
+        break if !nxt || nxt < 0
 
         while self[nxt] == 10 and nxt < size
           nxt += 1
@@ -211,7 +211,7 @@ class String
         break if pos == size
 
         str = byteslice pos, match_size
-        yield str unless str.empty?
+        yield str if str && !str.empty?
 
         # detect mutation within the block
         if !self.equal?(orig_data) or self.size != size
@@ -233,18 +233,18 @@ class String
 
       while pos < size
         nxt = unmodified_self.find_string(sep, pos)
-        break unless nxt
+        break if !nxt || nxt < 0
 
         match_size = nxt - pos
         str = unmodified_self.byteslice pos, match_size + pat_size
-        yield str unless str.empty?
+        yield str if str && !str.empty?
 
         pos = nxt + pat_size
       end
 
       # No more separates, but we need to grab the last part still.
       fin = unmodified_self.byteslice pos, self.size - pos
-      yield fin unless fin.empty?
+      yield fin if fin && !fin.empty?
     end
 
     self
