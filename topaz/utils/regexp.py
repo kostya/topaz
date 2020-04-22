@@ -609,18 +609,19 @@ class Branch(RegexpBase):
         return new_branches
 
     def optimize(self, info, in_set=False):
-        branches = self._flatten_branches(info, self.branches)
+        # branches = self._flatten_branches(info, self.branches)
 
-        prefix, branches = self._split_common_prefix(info, branches)
-        suffix, branches = self._split_common_suffix(info, branches)
+        # prefix, branches = self._split_common_prefix(info, branches)
+        # suffix, branches = self._split_common_suffix(info, branches)
 
-        branches = self._merge_common_prefixes(info, branches)
-        branches = self._reduce_to_set(info, branches)
-        if len(branches) > 1:
-            sequence = prefix + [Branch(branches)] + suffix
-        else:
-            sequence = prefix + branches + suffix
-        return make_sequence(sequence)
+        # branches = self._merge_common_prefixes(info, branches)
+        # branches = self._reduce_to_set(info, branches)
+        # if len(branches) > 1:
+        #     sequence = prefix + [Branch(branches)] + suffix
+        # else:
+        #     sequence = prefix + branches + suffix
+        # return make_sequence(sequence)
+        return self
 
     def compile(self, ctx):
         ctx.emit(OPCODE_BRANCH)

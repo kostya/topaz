@@ -506,6 +506,10 @@ class TestStringObject(BaseTopazTest):
         return 'helloo'.gsub("l", Hash.new { |h, k| replacements.pop() })
         """)
         assert space.str_w(w_res) == "he21oo"
+        w_res = space.execute("""
+        return "hahohe".gsub(/ha|ho/i, "a")
+        """)
+        assert space.str_w(w_res) == "aahe"
 
     def test_sub(self, space):
         w_res = space.execute("""
@@ -543,6 +547,12 @@ class TestStringObject(BaseTopazTest):
         assert space.str_w(w_res) == "he2loo"
         with self.raises(space, "ArgumentError"):
             space.execute("'string'.sub(/regex/)")
+
+    def test_scan(self, space):
+        w_res = space.execute("""
+        return "haHOhe".scan(/ha|ho/i)
+        """)
+        assert self.unwrap(space, w_res) == ["ha", "HO"]
 
     def test_succ(self, space):
         w_res = space.execute('return "abcd".succ')
