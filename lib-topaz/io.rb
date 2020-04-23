@@ -37,36 +37,56 @@ class IO
       return self
     end
 
+    sep = Topaz.convert_type(sep, String, :to_str)
+
     if limit == 0
       raise ArgumentError.new("invalid limit: 0 for each_line")
     end
 
-    rest = ""
-    nxt = read(8192)
-    need_read = false
-    while nxt || rest
-      if nxt && need_read
-        rest = rest ? rest + nxt : nxt
-        nxt = read(8192)
-        need_read = false
-      end
+    line = ""
+    line_len = 0
+    sep_length = sep.length
+    sep_length = 1 if sep_length == 0
 
-      line, rest = *rest.split(sep, 2)
+    topaz_buffered_read do |buffer|
+      pos_start = 0
+      while pos_start < buffer.length
+        pos_end = buffer.index(sep, pos_start)
 
-      if limit && line.size > limit
-        left = 0
-        right = limit
-        while right < line.size
-          yield line[left...right]
-          left, right = right, right + limit
+        if pos_end && pos_end >= 0
+          finded = true
+          pos_end += sep_length - 1
+        else
+          finded = false
+          pos_end = buffer.length - 1
         end
-        rest = line[right - limit..-1] + sep + (rest || "")
-      elsif rest || nxt.nil?
-        yield line
-      else
-        need_read = true
+        pos_len = pos_end - pos_start + 1
+
+        if limit && ((line_len + pos_len) > limit)
+          pos_len = limit - line_len
+          finded = true
+        end
+
+        if finded
+          if line_len == 0
+            yield buffer[pos_start, pos_len]
+          else
+            line += buffer[pos_start, pos_len]
+            yield line
+            line = ""
+            line_len = 0
+          end
+        else
+          line += buffer[pos_start, pos_len]
+          line_len += pos_len
+        end
+
+        pos_start += pos_len
       end
     end
+
+    yield line if line_len > 0
+
     self
   end
   alias each each_line
@@ -169,6 +189,16 @@ class IO
       return ch.ord
     else
       return nil
+    end
+  end
+
+private
+
+  def topaz_buffered_read(buffer_size = Topaz::IO_EACH_LINE_READ_BUFFER_SIZE)
+    loop do
+      buf = read(buffer_size)
+      break if !buf || buf.length == 0
+      yield buf
     end
   end
 end

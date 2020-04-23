@@ -288,9 +288,9 @@ class TestIO(BaseTopazTest):
             """ % f)
 
     def test_reopen(self, space, tmpdir):
-        content = "This is line one"
+        content = "This is line one\n"
         f = tmpdir.join("testfile")
-        f.write(content + "\n")
+        f.write(content)
         w_res = space.execute("""
         res = []
         class A
@@ -306,12 +306,12 @@ class TestIO(BaseTopazTest):
         res << f2.readlines[0]
         return res
         """ % (f, f))
-        assert self.unwrap(space, w_res) == [content, content, ""]
+        assert self.unwrap(space, w_res) == [content, content, None]
 
     def test_reopen_path(self, space, tmpdir):
-        content = "This is line one"
+        content = "This is line one\n"
         f = tmpdir.join("testfile")
-        f.write(content + "\n")
+        f.write(content)
         w_res = space.execute("""
         res = []
         f = File.new("%s")
@@ -321,7 +321,7 @@ class TestIO(BaseTopazTest):
         res << f.readlines[0]
         return res
         """ % (f, f))
-        assert self.unwrap(space, w_res) == [content, content, ""]
+        assert self.unwrap(space, w_res) == [content, content, None]
 
     def test_reopen_with_invalid_arg(self, space):
         with self.raises(space, "TypeError", "can't convert Fixnum into String"):
@@ -333,6 +333,44 @@ class TestIO(BaseTopazTest):
         return io.pid.is_a?(Fixnum), io.read
         """)
         assert self.unwrap(space, w_res) == [True, "foo\n"]
+
+    def test_io_each_line_works_when_data_more_than_buffer_size(self, space, tmpdir):
+        w_res = space.execute("""
+        return Topaz::IO_EACH_LINE_READ_BUFFER_SIZE
+        """)
+        buf_size = self.unwrap(space, w_res)
+
+        lines = int((buf_size + 10) / 61) + 1
+        content = "".join(["a" * 60 + "\n"] * lines)
+
+        f = tmpdir.join("big_file")
+        f.write(content + "\n")
+
+        w_res = space.execute("""
+        f = File.new("%s")
+        res = 0
+        f.each_line { |line| res += line.length }
+        return res
+        """ % (f))
+        assert self.unwrap(space, w_res) == 61 * lines + 1
+
+    def test_io_each_line_works_when_data_more_than_buffer_size_and_limit(self, space, tmpdir):
+        w_res = space.execute("""
+        return Topaz::IO_EACH_LINE_READ_BUFFER_SIZE
+        """)
+        buf_size = self.unwrap(space, w_res)
+
+        content = "a\n" + "a" * buf_size + "\n" + "a" * buf_size + "\n" + "a\n"
+        f = tmpdir.join("big_file2")
+        f.write(content)
+
+        w_res = space.execute("""
+        f = File.new("%s")
+        res = []
+        f.each_line(%s) { |line| res << line.length }
+        return res
+        """ % (f, buf_size - 1))
+        assert self.unwrap(space, w_res) == [2, buf_size - 1, 2, buf_size - 1, 2, 2]
 
     @pytest.mark.xfail
     def test_popen_write(self, space, capfd):

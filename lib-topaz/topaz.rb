@@ -23,6 +23,8 @@ module Topaz
       end
     end
   end
+
+  IO_EACH_LINE_READ_BUFFER_SIZE = 8192
 end
 
 lib_topaz = File.join(File.dirname(__FILE__), 'topaz')
