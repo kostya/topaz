@@ -16,3 +16,7 @@ To run something:
 `docker run -it topaz`
 
 `topaz /path/to/file.rb`
+
+### Benchmarks
+
+I added it to benchmarks here: https://github.com/kostya/crystal-benchmarks-game
