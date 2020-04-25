@@ -85,6 +85,14 @@ class TestIO(BaseTopazTest):
             io.read
             """ % f)
 
+    def test_read_big_file(self, space, tmpdir):
+        contents = "a" * 100000
+        f = tmpdir.join("file.txt")
+        f.write(contents)
+
+        w_res = space.execute("return File.new('%s').read.bytesize" % f)
+        assert space.int_w(w_res) == 100000
+
     def test_simple_print(self, space, capfd, tmpdir):
         space.execute('IO.new(1, "w").print("foo")')
         out, err = capfd.readouterr()
@@ -154,12 +162,12 @@ class TestIO(BaseTopazTest):
         $>.puts("$>")
         STDERR.puts("STDERR")
         $stderr.puts("$stderr")
-        return STDIN.read, $stdin.read
+        return STDIN.to_i, $stdin.to_i
         """)
         out, err = capfd.readouterr()
         assert out == "STDOUT\n$stdout\n$>\n"
         assert err == "STDERR\n$stderr\n"
-        assert self.unwrap(space, w_res) == [None, None]
+        assert self.unwrap(space, w_res) == [0, 0]
 
     def test_rewind(self, space, tmpdir):
         f = tmpdir.join("file.txt")

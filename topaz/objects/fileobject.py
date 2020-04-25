@@ -1,6 +1,8 @@
 import os
 import stat
 
+from rpython.rlib import streamio
+
 from topaz.coerce import Coerce
 from topaz.error import error_for_oserror
 from topaz.module import ClassDef
@@ -90,13 +92,22 @@ class W_FileObject(W_IOObject):
             perm = space.int_w(w_perm_or_opt)
         else:
             perm = 0665
-        mode, encoding = map_filemode(space, w_mode)
+        mode, mode_str, encoding = map_filemode(space, w_mode)
         if w_perm_or_opt is not space.w_nil or w_opt is not space.w_nil:
             raise space.error(space.w_NotImplementedError, "options hash or permissions for File.new")
         try:
             self.fd = os.open(filename, mode, perm)
         except OSError as e:
             raise error_for_oserror(space, e)
+
+        # Optimization for ReadOnly files, using stream reading
+        # this speedup common file read by 4 times
+        # TODO: rewrite to something better
+        if mode_str == "r" or mode_str == "rb":
+            try:
+                self.stream = streamio.fdopen_as_stream(self.fd, mode_str)
+            except OSError as e:
+                raise error_for_oserror(space, e)
         self.filename = filename
         return self
 

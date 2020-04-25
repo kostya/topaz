@@ -1,6 +1,7 @@
 import os
 
 from rpython.rlib.rpoll import POLLIN, PollError
+from rpython.rlib import streamio
 
 from topaz.coerce import Coerce
 from topaz.error import error_for_oserror
@@ -25,11 +26,15 @@ class W_IOObject(W_Object):
     def __init__(self, space):
         W_Object.__init__(self, space)
         self.fd = -1
+        self.stream = None
 
     def __del__(self):
         # Do not close standard file streams
         if self.fd > 3:
-            close_without_validation(self.fd)
+            try:
+                close_without_validation(self.fd)
+            except OSError as e:
+                pass
 
     def __deepcopy__(self, memo):
         obj = super(W_IOObject, self).__deepcopy__(memo)
@@ -45,17 +50,17 @@ class W_IOObject(W_Object):
 
     @classdef.setup_class
     def setup_class(cls, space, w_cls):
-        w_stdin = space.send(w_cls, "new", [space.newint(0)])
+        w_stdin = space.send(w_cls, "new", [space.newint(0), space.newstr_fromstr("r")])
         space.globals.set(space, "$stdin", w_stdin)
         space.set_const(space.w_object, "STDIN", w_stdin)
 
-        w_stdout = space.send(w_cls, "new", [space.newint(1)])
+        w_stdout = space.send(w_cls, "new", [space.newint(1), space.newstr_fromstr("w")])
         space.globals.set(space, "$stdout", w_stdout)
         space.globals.set(space, "$>", w_stdout)
         space.globals.set(space, "$/", space.newstr_fromstr("\n"))
         space.set_const(space.w_object, "STDOUT", w_stdout)
 
-        w_stderr = space.send(w_cls, "new", [space.newint(2)])
+        w_stderr = space.send(w_cls, "new", [space.newint(2), space.newstr_fromstr("w")])
         space.globals.set(space, "$stderr", w_stderr)
         space.set_const(space.w_object, "STDERR", w_stderr)
 
@@ -72,7 +77,7 @@ class W_IOObject(W_Object):
         perm = 0666
         mode = os.O_RDONLY
         if w_mode_str_or_int is not None:
-            mode, encoding = map_filemode(space, w_mode_str_or_int)
+            mode, mode_str, encoding = map_filemode(space, w_mode_str_or_int)
         if w_perm is not None and w_perm is not space.w_nil:
             perm = space.int_w(w_perm)
         path = Coerce.path(space, w_path)
@@ -89,17 +94,20 @@ class W_IOObject(W_Object):
             fd = w_fd_or_io.fd
         else:
             fd = Coerce.int(space, w_fd_or_io)
-        if isinstance(w_mode_str_or_int, W_StringObject):
-            mode = space.str_w(w_mode_str_or_int)
-        elif w_mode_str_or_int is None:
-            mode = None
-        else:
-            raise space.error(space.w_NotImplementedError, "int mode for IO.new")
         if w_opts is not None:
             raise space.error(space.w_NotImplementedError, "options hash for IO.new")
-        if mode is None:
-            mode = "r"
+        mode, mode_str, encoding = map_filemode(space, w_mode_str_or_int)
         self.fd = fd
+
+        # Optimization for ReadOnly files, using stream reading
+        # this speedup common file read by 4 times
+        # TODO: rewrite to something better
+        if mode_str == "r" or mode_str == "rb":
+            try:
+                self.stream = streamio.fdopen_as_stream(fd, mode_str)
+            except OSError as e:
+                raise error_for_oserror(space, e)
+
         return self
 
     @classdef.method("read")
@@ -115,31 +123,44 @@ class W_IOObject(W_Object):
                 return space.newstr_fromstr("")
         else:
             length = -1
-        read_bytes = 0
-        read_chunks = []
-        while length < 0 or read_bytes < length:
-            if length > 0:
-                max_read = int(length - read_bytes)
-            else:
-                max_read = 8192
+
+        if self.stream is None:
+            read_bytes = 0
+            read_chunks = []
+            while length < 0 or read_bytes < length:
+                if length > 0:
+                    max_read = int(length - read_bytes)
+                else:
+                    max_read = 8192
+                try:
+                    current_read = os.read(self.fd, max_read)
+                except OSError as e:
+                    raise error_for_oserror(space, e)
+                if len(current_read) == 0:
+                    break
+                read_bytes += len(current_read)
+                read_chunks += current_read
+            # Return nil on EOF if length is given
+            if read_bytes == 0:
+                return space.w_nil
+            w_read_str = space.newstr_fromchars(read_chunks)
+        else:
             try:
-                current_read = os.read(self.fd, max_read)
+                if length < 0:
+                    read_str = self.stream.readall()
+                else:
+                    read_str = self.stream.read(length)
             except OSError as e:
                 raise error_for_oserror(space, e)
-            if len(current_read) == 0:
-                break
-            read_bytes += len(current_read)
-            read_chunks += current_read
-        # Return nil on EOF if length is given
-        if read_bytes == 0:
-            return space.w_nil
-        w_read_str = space.newstr_fromchars(read_chunks)
+            if len(read_str) == 0:
+                return space.w_nil
+            w_read_str = space.newstr_fromstr(read_str)
+
         if w_str is not None:
             w_str.clear(space)
             w_str.extend(space, w_read_str)
             return w_str
-        else:
-            return w_read_str
+        return w_read_str
 
     @classdef.method("write")
     def method_write(self, space, w_str):
@@ -160,7 +181,13 @@ class W_IOObject(W_Object):
     @classdef.method("seek", amount="int", whence="int")
     def method_seek(self, space, amount, whence=os.SEEK_SET):
         self.ensure_not_closed(space)
-        os.lseek(self.fd, amount, whence)
+        try:
+            if self.stream is not None:
+                self.stream.seek(amount, whence)
+            else:
+                os.lseek(self.fd, amount, whence)
+        except OSError as e:
+            raise error_for_oserror(space, e)
         return space.newint(0)
 
     @classdef.method("pos")
@@ -169,6 +196,8 @@ class W_IOObject(W_Object):
         self.ensure_not_closed(space)
         # TODO: this currently truncates large values, switch this to use a
         # Bignum in those cases
+        if self.stream is not None:
+            return space.newint(self.stream.tell())
         return space.newint(int(os.lseek(self.fd, 0, os.SEEK_CUR)))
 
     @classdef.method("rewind")
@@ -195,8 +224,11 @@ class W_IOObject(W_Object):
         else:
             end = ""
         strings = [space.str_w(space.send(w_arg, "to_s")) for w_arg in args_w]
-        os.write(self.fd, sep.join(strings))
-        os.write(self.fd, end)
+        try:
+            os.write(self.fd, sep.join(strings))
+            os.write(self.fd, end)
+        except OSError as e:
+            raise error_for_oserror(space, e)
         return space.w_nil
 
     @classdef.method("getc")
@@ -214,8 +246,8 @@ class W_IOObject(W_Object):
     def method_pipe(self, space, block=None):
         r, w = os.pipe()
         pipes_w = [
-            space.send(self, "new", [space.newint(r)]),
-            space.send(self, "new", [space.newint(w)])
+            space.send(self, "new", [space.newint(r), space.newstr_fromstr("r")]),
+            space.send(self, "new", [space.newint(w), space.newstr_fromstr("w")])
         ]
         if block is not None:
             try:
@@ -254,8 +286,12 @@ class W_IOObject(W_Object):
     @classdef.method("close")
     def method_close(self, space):
         self.ensure_not_closed(space)
-        os.close(self.fd)
+        try:
+            os.close(self.fd)
+        except OSError as e:
+            raise error_for_oserror(space, e)
         self.fd = -1
+        self.stream = None
         return self
 
     @classdef.method("closed?")
