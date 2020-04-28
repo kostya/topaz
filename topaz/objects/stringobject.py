@@ -586,8 +586,8 @@ class W_StringObject(W_Object):
             start_idx = space.str_w(self).find(other_str)
             end_idx = start_idx + len(other_str)
         elif space.is_kind_of(w_idx, space.w_regexp):
-            ctx = w_idx.make_ctx(space.str_w(self))
-            if self.search_context(space, ctx):
+            ctx, pattern = w_idx.make_ctx(space.str_w(self))
+            if self.search_context(space, ctx, pattern):
                 if w_count is None:
                     start_idx = ctx.match_start
                     end_idx = ctx.match_end
@@ -696,9 +696,9 @@ class W_StringObject(W_Object):
             chars += space.str_w(self)
             return space.newstr_fromchars(chars)
 
-    def search_context(self, space, ctx):
+    def search_context(self, space, ctx, pattern):
         try:
-            return rsre_core.search_context(ctx)
+            return rsre_core.search_context(ctx, pattern)
         except rsre_core.Error, e:
             raise space.error(space.w_RuntimeError, e.msg)
 
@@ -710,8 +710,8 @@ class W_StringObject(W_Object):
         elif space.is_kind_of(w_sub, space.w_string):
             return space.newint(space.str_w(self).find(space.str_w(w_sub), offset))
         elif space.is_kind_of(w_sub, space.w_regexp):
-            ctx = w_sub.make_ctx(space.str_w(self), offset=offset)
-            if self.search_context(space, ctx):
+            ctx, pattern = w_sub.make_ctx(space.str_w(self), offset=offset)
+            if self.search_context(space, ctx, pattern):
                 return space.newint(ctx.match_start)
             else:
                 return space.newint(-1)
@@ -734,9 +734,9 @@ class W_StringObject(W_Object):
         if space.is_kind_of(w_sub, space.w_string):
             idx = space.str_w(self).rfind(space.str_w(w_sub), 0, end + 1)
         elif space.is_kind_of(w_sub, space.w_regexp):
-            ctx = w_sub.make_ctx(space.str_w(self))
+            ctx, pattern = w_sub.make_ctx(space.str_w(self))
             idx = -1
-            while self.search_context(space, ctx):
+            while self.search_context(space, ctx, pattern):
                 if ctx.match_start > end:
                     break
                 else:
@@ -794,11 +794,11 @@ class W_StringObject(W_Object):
             n = 0
             last = 0
             string = space.str_w(self)
-            ctx = w_sep.make_ctx(string)
+            ctx, pattern = w_sep.make_ctx(string)
             w_match = w_sep.get_match_result(space, ctx, string, found=True)
 
             while limit <= 0 or n + 1 < limit:
-                if not self.search_context(space, ctx):
+                if not self.search_context(space, ctx, pattern):
                     break
                 elif ctx.match_start == ctx.match_end:
                     if ctx.match_start == ctx.end:
@@ -1078,9 +1078,9 @@ class W_StringObject(W_Object):
     def scan_regexp(self, space, w_pattern):
         last = -1
         string = space.str_w(self)
-        ctx = w_pattern.make_ctx(string)
+        ctx, pattern = w_pattern.make_ctx(string)
 
-        while last < len(string) and self.search_context(space, ctx):
+        while last < len(string) and self.search_context(space, ctx, pattern):
             w_matchdata = w_pattern.get_match_result(space, ctx, string, found=True)
             if w_matchdata.size() > 1:
                 matches_w = []
@@ -1178,14 +1178,14 @@ class W_StringObject(W_Object):
         result = []
         pos = 0
         string = space.str_w(self)
-        ctx = w_pattern.make_ctx(string)
+        ctx, pattern = w_pattern.make_ctx(string)
 
         w_matchdata = w_pattern.get_match_result(space, ctx, string, found=True)
         replacement_parts = None
         if replacement is not None and "\\" in replacement:
             replacement_parts = [s for s in replacement.split("\\") if s]
 
-        while pos < len(string) and self.search_context(space, ctx):
+        while pos < len(string) and self.search_context(space, ctx, pattern):
             result += string[pos:ctx.match_start]
             if replacement_parts is not None:
                 result += self.gsub_regexp_subst_string(

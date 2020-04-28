@@ -5,6 +5,7 @@ import sys
 from rpython.rlib.objectmodel import compute_hash
 from rpython.rlib.rarithmetic import ovfcheck_float_to_int
 from rpython.rlib.rbigint import rbigint
+from rpython.rlib import special_value
 from rpython.rlib.rfloat import (formatd, DTSF_ADD_DOT_0, DTSF_STR_PRECISION,
     NAN, INFINITY, isfinite, round_away)
 
@@ -138,7 +139,7 @@ class W_FloatObject(W_RootObject):
             if self.floatvalue == 0.0:
                 return space.newfloat(NAN)
             else:
-                inf = math.copysign(INFINITY, other)
+                inf = math.copysign(special_value.INF, other)
                 if self.floatvalue < 0.0:
                     return space.newfloat(-inf)
                 else:

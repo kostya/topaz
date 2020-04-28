@@ -4,3 +4,5 @@ bin/topaz
 bin/topaz-jit
 bin/topaz.exe
 tests/modules/ffi/build/
+.env
+.pypy

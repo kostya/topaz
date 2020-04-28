@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import math
 
-from rpython.rlib import rfloat
+from rpython.rlib import rfloat, special_value
 
 from topaz.module import ModuleDef, ClassDef
 from topaz.objects.exceptionobject import W_StandardError, new_exception_allocate
@@ -52,7 +52,7 @@ class Math(object):
         except ValueError:
             if value == 1.0 or value == -1.0:
                 # produce an infinity with the right sign
-                res = rfloat.copysign(rfloat.INFINITY, value)
+                res = math.copysign(special_value.INF, value)
             else:
                 raise space.error(space.getclassfor(W_DomainError), 'Numerical argument is out of domain - "atanh"')
         return space.newfloat(res)
@@ -73,7 +73,7 @@ class Math(object):
         try:
             res = math.cosh(value)
         except OverflowError:
-            res = rfloat.copysign(rfloat.INFINITY, value)
+            res = math.copysign(special_value.INF, value)
         return space.newfloat(res)
 
     @moduledef.function("exp", value="strictfloat")
@@ -94,7 +94,7 @@ class Math(object):
         except ValueError:
             if value == 0.0:
                 # produce an infinity with the right sign
-                res = rfloat.copysign(rfloat.INFINITY, value)
+                res = math.copysign(special_value.INF, value)
             else:
                 raise space.error(space.getclassfor(W_DomainError), 'Numerical argument is out of domain - "gamma"')
         except OverflowError:
@@ -169,7 +169,7 @@ class Math(object):
         try:
             res = math.sinh(value)
         except OverflowError:
-            res = rfloat.copysign(rfloat.INFINITY, value)
+            res = math.copysign(special_value.INF, value)
         return space.newfloat(res)
 
     @moduledef.function("sqrt", value="strictfloat")

@@ -197,7 +197,8 @@ class W_IOObject(W_Object):
         # TODO: this currently truncates large values, switch this to use a
         # Bignum in those cases
         if self.stream is not None:
-            return space.newint(self.stream.tell())
+            pos = self.stream.tell()
+            return space.newint(int(pos))
         return space.newint(int(os.lseek(self.fd, 0, os.SEEK_CUR)))
 
     @classdef.method("rewind")

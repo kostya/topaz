@@ -18,6 +18,8 @@ def handle_config(config, translateconfig):
     max_stack_size = 11 << 18  # 2.8 Megs
     if host_factory.name == 'msvc':
         host_factory.cflags += ('/DMAX_STACK_SIZE=%d' % max_stack_size,)
+        host_factory.cflags += ('/DRPYTHON_LL2CTYPES',)
     elif host_factory.name in ('linux', 'darwin'):
         host_factory.cflags += ('-DMAX_STACK_SIZE=%d' % max_stack_size,)
+        host_factory.cflags += ('-DRPYTHON_LL2CTYPES',) # this is hack needed, because compilation failed to find __vmprof_eval_vmprof
     config.translation.suggest(check_str_without_nul=True)

@@ -45,7 +45,6 @@ class RegexpCache(object):
     def set(self, pattern, flags, compiled_regexp):
         self._contents[pattern, flags] = compiled_regexp
 
-
 class W_RegexpObject(W_Object):
     classdef = ClassDef("Regexp", W_Object.classdef)
 
@@ -149,7 +148,7 @@ class W_RegexpObject(W_Object):
     def make_ctx(self, s, offset=0):
         assert offset >= 0
         endpos = len(s)
-        return rsre_core.StrMatchContext(self.code, s, offset, endpos, self.flags)
+        return (rsre_core.StrMatchContext(s, offset, endpos, self.flags), rsre_core.CompiledPattern(self.code))
 
     def get_match_result(self, space, ctx, target, found):
         if found:
@@ -210,8 +209,8 @@ class W_RegexpObject(W_Object):
         if w_s is space.w_nil:
             return space.w_nil
         s = Coerce.str(space, w_s)
-        ctx = self.make_ctx(s)
-        matched = rsre_core.search_context(ctx)
+        ctx, pattern = self.make_ctx(s)
+        matched = rsre_core.search_context(ctx, pattern)
         self.get_match_result(space, ctx, s, matched)
         if matched:
             return space.newint(ctx.match_start)
@@ -228,14 +227,14 @@ class W_RegexpObject(W_Object):
             offset = Coerce.int(space, w_offset)
         else:
             offset = 0
-        ctx = self.make_ctx(s, offset)
-        matched = rsre_core.search_context(ctx)
+        ctx, pattern = self.make_ctx(s, offset)
+        matched = rsre_core.search_context(ctx, pattern)
         return self.get_match_result(space, ctx, s, matched)
 
     @classdef.method("===", s="str")
     def method_eqeqeq(self, space, s):
-        ctx = self.make_ctx(s)
-        matched = rsre_core.search_context(ctx)
+        ctx, pattern = self.make_ctx(s)
+        matched = rsre_core.search_context(ctx, pattern)
         self.get_match_result(space, ctx, s, matched)
         return space.newbool(matched)
 
