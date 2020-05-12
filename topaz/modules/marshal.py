@@ -94,12 +94,11 @@ class Marshal(object):
             bytes += Marshal.dump(space, space.w_true)
         elif isinstance(w_obj, W_HashObject):
             bytes.append(Marshal.HASH)
-            hash_len = w_obj.strategy.len(w_obj.dict_storage)
-            hash_keys_w = w_obj.strategy.keys(w_obj.dict_storage)
+            hash_len = w_obj.dict.len()
             bytes += Marshal.integer2bytes(hash_len)
-            for w_key in hash_keys_w:
-                bytes += Marshal.dump(space, w_key)
-                w_value = w_obj.strategy.getitem(w_obj.dict_storage, w_key)
+            for entry, _ in w_obj.dict.each():
+                bytes += Marshal.dump(space, entry.w_key)
+                w_value = entry.w_value
                 bytes += Marshal.dump(space, w_value)
         else:
             raise NotImplementedError(type(w_obj))

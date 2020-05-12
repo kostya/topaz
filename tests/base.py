@@ -45,10 +45,8 @@ class BaseTopazTest(object):
             return [self.unwrap(space, w_x) for w_x in space.listview(w_obj)]
         elif isinstance(w_obj, W_HashObject):
             h = {}
-            contents = w_obj.strategy.unerase(w_obj.dict_storage)
-            w_hash = contents
-            for w_key in w_hash.keys():
-                h[self.unwrap(space, w_key)] = self.unwrap(space, w_hash[w_key])
+            for entry, _ in w_obj.dict.each():
+                h[self.unwrap(space, entry.w_key)] = self.unwrap(space, entry.w_value)
             return h
         elif isinstance(w_obj, W_ModuleObject):
             return w_obj

@@ -153,11 +153,9 @@ class Frame(BaseFrame):
             w_key = space.newsymbol(name)
             w_value = None
             if keywords_hash is not None:
-                try:
-                    w_value = keywords_hash.getitem(w_key)
-                    keywords_hash.delete(w_key)
-                except KeyError:
-                    pass
+                entry = keywords_hash.dict.remove(w_key)
+                if entry is not None:
+                    w_value = entry.w_value
             # kword arguments with defaults come first, so if we get an
             # index error here, we're missing a required keyword argument
             if w_value is None:
@@ -179,7 +177,7 @@ class Frame(BaseFrame):
             else:
                 self._set_arg(space, bytecode.kwrest_pos, space.newhash())
         elif keywords_hash is not None:
-            if keywords_hash.size() > 0:
+            if keywords_hash.dict.len() > 0:
                 raise space.error(
                     space.w_ArgumentError,
                     "unknown keywords: %s" % space.str_w(
