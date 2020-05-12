@@ -7,16 +7,16 @@ RUN cd /opt && git clone https://github.com/kostya/topaz.git && cd topaz \
   && pip install -r requirements.txt
 
 RUN cd /opt \
-  && curl -L 'https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.6.0-linux64.tar.bz2' > l.tar.bz2 \
+  && curl -L 'https://bitbucket.org/pypy/pypy/downloads/pypy2.7-v7.3.1-linux64.tar.bz2' > l.tar.bz2 \
   && tar xjf l.tar.bz2 \
-  && curl -L 'https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.6.0-src.tar.bz2' > s.tar.bz2 \
+  && curl -L 'https://bitbucket.org/pypy/pypy/downloads/pypy2.7-v7.3.1-src.tar.bz2' > s.tar.bz2 \
   && tar xjf s.tar.bz2 \
   && rm *.tar.bz2
 
-ENV PYTHONPATH="/opt/pypy2-v5.6.0-src:/usr/local/lib/python2.7/dist-packages"
-ENV PATH="/opt/pypy2-v5.6.0-linux64/bin:/opt/pypy2-v5.6.0-src/rpython/bin/:${PATH}"
+ENV PYTHONPATH="/opt/pypy2.7-v7.3.1-src:/usr/local/lib/python2.7/dist-packages"
+ENV PATH="/opt/pypy2.7-v7.3.1-linux64/bin:/opt/pypy2.7-v7.3.1-src/rpython/bin/:${PATH}"
 
-RUN cd /opt/topaz && pypy ../pypy2-v5.6.0-src/rpython/bin/rpython -Ojit targettopaz.py \
+RUN cd /opt/topaz && pypy ../pypy2.7-v7.3.1-src/rpython/bin/rpython -Ojit targettopaz.py \
   && rm -rf /tmp/*
 
 ENV PATH="/opt/topaz/bin:${PATH}"
