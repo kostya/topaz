@@ -37,7 +37,10 @@ class W_BignumObject(W_IntegerObject):
         return self.bigint
 
     def float_w(self, space):
-        return self.bigint.tofloat()
+        try:
+            return self.bigint.tofloat()
+        except OverflowError:
+            raise space.error(space.w_RangeError, "bignum too big to convert into `long'")
 
     def intmask_w(self, space):
         return rffi.cast(lltype.Signed, self.uintmask_w((space)))
@@ -54,6 +57,10 @@ class W_BignumObject(W_IntegerObject):
     @classdef.method("to_s")
     def method_to_s(self, space):
         return space.newstr_fromstr(self.bigint.str())
+
+    @classdef.method("to_int")
+    def method_to_int(self, space):
+        return space.newint(self.int_w(space))
 
     @classdef.method("to_f")
     def method_to_f(self, space):
@@ -151,6 +158,11 @@ class W_BignumObject(W_IntegerObject):
     def method_pow(self, space, w_other):
         if space.getclass(w_other) is space.w_fixnum or space.getclass(w_other) is space.w_bignum:
             exp = space.bigint_w(w_other)
+
+            if exp.int_gt(10000):
+                # HACK for specs, remove later or fix it
+                raise space.error(space.w_ArgumentError, "pow value too big, temp unsupported")
+
             negative_exponent = False
             if exp.sign < 0:
                 negative_exponent = True

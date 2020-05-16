@@ -228,3 +228,4 @@ fails:Kernel#Integer raises an ArgumentError when the String contains digits out
 fails:Kernel#Integer raises an ArgumentError when the String contains digits out of range of radix 34
 fails:Kernel#Integer raises an ArgumentError when the String contains digits out of range of radix 35
 fails:Kernel#Integer raises an ArgumentError when the String contains digits out of range of radix 36
+fails:Kernel.Integer returns a Fixnum or Bignum object

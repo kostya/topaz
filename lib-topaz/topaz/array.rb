@@ -1,4 +1,6 @@
 class Topaz::Array
+  GUARD_SIZE = 2**62 - 1
+
   def self.flatten(array, out, level)
     modified = nil
     Thread.current.recursion_guard(:array_flatten, array) do
