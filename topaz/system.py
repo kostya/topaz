@@ -29,5 +29,5 @@ RUBY_PLATFORM = "%s-%s" % (cpu, os_name.lower())
 RUBY_ENGINE = "topaz"
 RUBY_VERSION = "2.4.0"
 RUBY_PATCHLEVEL = 0
-RUBY_DESCRIPTION = "%s (ruby-%sp%d) (git rev %s) [%s]" % (
+RUBY_DESCRIPTION = "%s (ruby-%sp%d) (git rev %s) (kostya build: https://github.com/kostya/topaz) [%s]" % (
     RUBY_ENGINE, RUBY_VERSION, RUBY_PATCHLEVEL, RUBY_REVISION, RUBY_PLATFORM)
