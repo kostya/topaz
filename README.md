@@ -19,4 +19,4 @@ To run something:
 
 ### Benchmarks
 
-I added it to benchmarks here: https://github.com/kostya/crystal-benchmarks-game, in most cases this is not final performance, and optimizations can be done
+I added it to benchmarks here: https://github.com/kostya/jit-benchmarks, in most cases this is not final performance, and optimizations can be done
