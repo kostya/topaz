@@ -9,7 +9,7 @@ class Array
     end
     length = Topaz.convert_type(size_or_arr, Fixnum, :to_int)
     raise ArgumentError.new("negative array size") if length < 0
-    raise ArgumentError.new("size must be <= #{Topaz::FIXNUM_MAX}") if length >= Topaz::FIXNUM_MAX
+    raise ArgumentError.new("size must be <= #{Topaz::FIXNUM_MAX / 2}") if length >= Topaz::FIXNUM_MAX / 2
     if block
       # TODO: Emit "block supersedes default value argument" warning
       length.times { |i| self << yield(i) }
@@ -466,7 +466,7 @@ class Array
       if two
         right = Topaz.convert_type(two, Fixnum, :to_int)
         return self if right == 0
-        raise ArgumentError.new("size must be <= #{Topaz::FIXNUM_MAX}") if right >= Topaz::FIXNUM_MAX
+        raise ArgumentError.new("size must be <= #{Topaz::FIXNUM_MAX / 2}") if right >= Topaz::FIXNUM_MAX / 2
         right += left
       else
         right = size
