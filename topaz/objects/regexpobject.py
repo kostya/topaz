@@ -148,7 +148,7 @@ class W_RegexpObject(W_Object):
     def make_ctx(self, s, offset=0):
         assert offset >= 0
         endpos = len(s)
-        return (rsre_core.StrMatchContext(s, offset, endpos, self.flags), rsre_core.CompiledPattern(self.code))
+        return (rsre_core.StrMatchContext(s, offset, endpos), rsre_core.CompiledPattern(self.code, self.flags))
 
     def get_match_result(self, space, ctx, target, found):
         if found:

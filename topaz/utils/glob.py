@@ -14,7 +14,7 @@ def regexp_match(cache, re, string):
     pos = 0
     endpos = len(string)
     code, flags, _, _, _, _ = regexp.compile(cache, re)
-    return (rsre_core.StrMatchContext(string, pos, endpos, flags), rsre_core.CompiledPattern(code))
+    return (rsre_core.StrMatchContext(string, pos, endpos), rsre_core.CompiledPattern(code, flags))
 
 def path_split(string):
     if not string:
