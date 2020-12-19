@@ -66,7 +66,7 @@ def get_topaz_config_options():
     return {
         "translation.continuation": True,
         "translation.jit_opencoder_model": "big",
-        "translation.make_jobs": 8
+        "translation.make_jobs": 4
     }
 
 
